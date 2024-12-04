@@ -3,7 +3,7 @@ name: Run Python Script on Schedule
 on:
   # This cron syntax schedules the job. This example runs it every day at midnight UTC.
   schedule:
-    - cron: '0 0 * * *'  # Runs every day at midnight (UTC)
+    - cron: '*/5 * * * *'  # Runs every day at midnight (UTC)
   workflow_dispatch:  # This allows you to trigger the workflow manually if needed
 
 jobs:
@@ -26,4 +26,4 @@ jobs:
 
       - name: Run the Python script
         run: |
-          python your-script.py  # Run your script (replace with your actual script name)
+          python Smartsheets_Event_Trigger.py  # Run your script (replace with your actual script name)
