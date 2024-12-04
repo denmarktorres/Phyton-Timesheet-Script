@@ -23,15 +23,27 @@ def get_all_rows(sheet_id):
         return [], {}
 
 # Helper: Find existing Helper Rows
-def find_helper_row(rows, email, timesheet_week, helper_type_col_id, email_col_id, week_col_id):
+def find_helper_rows(rows, email, timesheet_week, helper_type_col_id, email_col_id, week_col_id):
+    matching_rows = []
     for row in rows:
         helper_type = next((cell.value for cell in row.cells if cell.column_id == helper_type_col_id), None)
         row_email = next((cell.value for cell in row.cells if cell.column_id == email_col_id), None)
         row_week = next((cell.value for cell in row.cells if cell.column_id == week_col_id), None)
 
         if helper_type == "Helper" and row_email == email and row_week == timesheet_week:
-            return row
-    return None
+            matching_rows.append(row)
+    return matching_rows
+
+# Helper: Delete all existing Helper rows for the given email and timesheet week
+def delete_existing_helper_rows(rows, email, timesheet_week, helper_type_col_id, email_col_id, week_col_id):
+    rows_to_delete = find_helper_rows(rows, email, timesheet_week, helper_type_col_id, email_col_id, week_col_id)
+    if rows_to_delete:
+        row_ids_to_delete = [row.id for row in rows_to_delete]
+        try:
+            smartsheet_client.Sheets.delete_rows(SHEET_ID, row_ids_to_delete)
+            print(f"Deleted {len(row_ids_to_delete)} existing helper rows for Email: {email}, Week: {timesheet_week}.")
+        except Exception as e:
+            print(f"Error deleting existing helper rows: {e}")
 
 # Helper: Calculate sums for user entries (excluding Helper rows)
 def calculate_sums(rows, email, timesheet_week, email_col_id, week_col_id, sum_col_ids, helper_type_col_id):
@@ -53,14 +65,9 @@ def calculate_sums(rows, email, timesheet_week, email_col_id, week_col_id, sum_c
     return sums
 
 # Step 2: Add or update a helper row
-def add_or_update_helper_row(sheet_id, email, timesheet_week, sums, column_map, existing_helper_row=None):
-    if existing_helper_row:
-        # If helper row exists, delete it first
-        try:
-            smartsheet_client.Sheets.delete_rows(sheet_id, [existing_helper_row.id])
-            print(f"Existing helper row deleted for Email: {email}, Week: {timesheet_week}.")
-        except Exception as e:
-            print(f"Error deleting existing helper row for Email: {email}, Week: {timesheet_week}: {e}")
+def add_or_update_helper_row(sheet_id, email, timesheet_week, sums, column_map, rows, existing_helper_row=None):
+    # Delete existing helper rows for this email and timesheet week
+    delete_existing_helper_rows(rows, email, timesheet_week, column_map[HELPER_TYPE_COLUMN], column_map[EMAIL_COLUMN], column_map[TIMESHEET_WEEK_COLUMN])
 
     # Create a new helper row to be added at the bottom
     new_row = smartsheet.models.Row()
@@ -127,14 +134,11 @@ def main():
 
             # Only proceed if we haven't already processed this email-week combination
             if (email, timesheet_week) not in processed_combinations:
-                # Check if a helper row already exists
-                existing_helper_row = find_helper_row(rows, email, timesheet_week, helper_type_col_id, email_col_id, week_col_id)
-
                 # Calculate sums for this user entry, excluding Helper rows
                 sums = calculate_sums(rows, email, timesheet_week, email_col_id, week_col_id, sum_col_ids, helper_type_col_id)
 
                 # Add or update the helper row
-                add_or_update_helper_row(SHEET_ID, email, timesheet_week, sums, column_map, existing_helper_row)
+                add_or_update_helper_row(SHEET_ID, email, timesheet_week, sums, column_map, rows)
                 
                 # Mark this email-week combination as processed
                 processed_combinations.add((email, timesheet_week))
