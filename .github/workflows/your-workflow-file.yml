@@ -1,10 +1,10 @@
-name: Run Python Script on Schedule
+name: Run Python Script via Power Automate
 
 on:
-  # This cron syntax schedules the job. This example runs it every day at midnight UTC.
-  schedule:
-    - cron: '*/5 * * * *'  # Runs every day at midnight (UTC)
-  workflow_dispatch:  # This allows you to trigger the workflow manually if needed
+  workflow_dispatch:  # Allows manual triggering from GitHub Actions UI
+  repository_dispatch:  # Enables triggering via API (used by Power Automate)
+    types:
+      - trigger-python-script  # Custom event type for triggering
 
 jobs:
   run:
@@ -12,17 +12,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2  # Check out the repository so we can run the script
+        uses: actions/checkout@v2  # Check out the repository to access code
 
       - name: Set up Python
         uses: actions/setup-python@v2  # Set up Python environment
         with:
-          python-version: '3.x'  # Specify Python version you need (e.g., '3.x' for latest Python 3)
+          python-version: '3.x'  # Specify Python version (e.g., '3.x' for latest Python 3)
 
       - name: Install Dependencies
         run: |
-          pip install smartsheet-python-sdk
+          pip install smartsheet-python-sdk  # Install required dependencies
 
       - name: Run the Python script
         run: |
-          python Smartsheets_Event_Trigger.py  # Run your script (replace with your actual script name)
+          python Smartsheets_Event_Trigger.py  # Run the specified Python script
