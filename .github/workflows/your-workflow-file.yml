@@ -1,0 +1,29 @@
+name: Run Python Script on Schedule
+
+on:
+  # This cron syntax schedules the job. This example runs it every day at midnight UTC.
+  schedule:
+    - cron: '0 0 * * *'  # Runs every day at midnight (UTC)
+  workflow_dispatch:  # This allows you to trigger the workflow manually if needed
+
+jobs:
+  run:
+    runs-on: ubuntu-latest  # The environment the job runs in (Ubuntu server)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2  # Check out the repository so we can run the script
+
+      - name: Set up Python
+        uses: actions/setup-python@v2  # Set up Python environment
+        with:
+          python-version: '3.x'  # Specify Python version you need (e.g., '3.x' for latest Python 3)
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip  # Upgrade pip to the latest version
+          pip install -r requirements.txt  # Install any dependencies (if you have a requirements.txt)
+
+      - name: Run the Python script
+        run: |
+          python your-script.py  # Run your script (replace with your actual script name)
